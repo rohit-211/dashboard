@@ -21,32 +21,6 @@ st.markdown("Monitor, analyze, and optimize corporate AI usage to reduce environ
 st.markdown("---")
 
 # ----------------------------------------------------
-# HERO METRICS
-# ----------------------------------------------------
-hero_metrics = {
-    "Score": 85.8,
-    "MSE": 93.3,
-    "CFD": 0.85,
-    "TUA": 80.0
-}
-
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    st.metric("Corporate Sustainability Score", f"{hero_metrics['Score']} / 100", "Good")
-
-with col2:
-    st.metric("Model Selection Efficiency", f"{hero_metrics['MSE']}%", "+8.3% vs Last Month")
-
-with col3:
-    st.metric("Daily Carbon Footprint", f"{hero_metrics['CFD']} g CO2", "-0.2g vs Last Month")
-
-with col4:
-    st.metric("Time-of-Use Awareness", f"{hero_metrics['TUA']}%", "Peak Green Hours")
-
-st.markdown("---")
-
-# ----------------------------------------------------
 # SIDEBAR
 # ----------------------------------------------------
 st.sidebar.header("⚙ AI Emission Controls")
@@ -91,19 +65,38 @@ total_emissions = {
 "Gemini-Flash":gemini_flash*gemini_flash_queries
 }
 
+total_daily_emissions=sum(total_emissions.values())
+
 model_emissions=pd.DataFrame({
 "Model":list(total_emissions.keys()),
 "Total CO2 (g)":list(total_emissions.values())
 }).sort_values(by="Total CO2 (g)",ascending=True)
 
 # ----------------------------------------------------
-# DYNAMIC RADAR PARAMETERS
+# HERO METRICS (DYNAMIC)
+# ----------------------------------------------------
+sustainability_score=max(0,100-(total_daily_emissions/50))
+model_efficiency=70+(migration_pct*0.3)
+daily_carbon=total_daily_emissions/queries
+time_use=min(100,50+(migration_pct*0.5))
+
+col1,col2,col3,col4=st.columns(4)
+
+col1.metric("Corporate Sustainability Score",f"{sustainability_score:.2f} / 100")
+col2.metric("Model Selection Efficiency",f"{model_efficiency:.2f}%")
+col3.metric("Daily Carbon Footprint",f"{daily_carbon:.3f} g CO2")
+col4.metric("Time-of-Use Awareness",f"{time_use:.2f}%")
+
+st.markdown("---")
+
+# ----------------------------------------------------
+# RADAR PARAMETERS
 # ----------------------------------------------------
 query_score=min(20,(queries/5000)*20)
 model_score=min(25,(migration_pct/100)*25)
 complexity_score=min(15,(gpt4+claude_opus+gemini_ultra)*2)
-time_score=min(10,(hero_metrics["TUA"]/100)*10)
-carbon_score=min(20,(hero_metrics["CFD"]/2)*20)
+time_score=min(10,(time_use/100)*10)
+carbon_score=min(20,(daily_carbon/2)*20)
 session_score=min(10,(migration_pct/100)*10)
 
 user_performance=[
@@ -183,7 +176,7 @@ st.subheader("AI Sustainability Risk Indicator")
 
 fig=go.Figure(go.Indicator(
 mode="gauge+number",
-value=hero_metrics["Score"],
+value=sustainability_score,
 title={'text':"Sustainability Score"},
 gauge={
 'axis':{'range':[0,100]},
@@ -200,7 +193,7 @@ st.plotly_chart(fig,use_container_width=True)
 st.markdown("---")
 
 # ----------------------------------------------------
-# TEMPORAL CARBON ANALYSIS (FIXED)
+# TEMPORAL CARBON ANALYSIS (DYNAMIC)
 # ----------------------------------------------------
 col_bottom_left,col_bottom_right=st.columns(2)
 
@@ -209,32 +202,31 @@ with col_bottom_left:
     st.subheader("Temporal Carbon Intensity")
 
     hours=list(range(24))
-
     base_queries=queries/24
 
     query_volume=[
-    int(base_queries*(1+0.6*np.sin(h/3)))
+    int(base_queries*(1+0.8*np.sin((h-6)/3)))
     for h in hours
     ]
 
-    grid_carbon=[
-    300+100*np.sin((h-6)/4)
+    carbon_intensity=[
+    (total_daily_emissions/10)*(1+np.sin((h-6)/4))
     for h in hours
     ]
 
     df_temporal=pd.DataFrame({
     "Hour":hours,
     "Query Volume":query_volume,
-    "Grid Carbon":grid_carbon
+    "Carbon Intensity":carbon_intensity
     })
 
     fig_area=go.Figure()
 
     fig_area.add_trace(go.Scatter(
     x=df_temporal["Hour"],
-    y=df_temporal["Grid Carbon"],
+    y=df_temporal["Carbon Intensity"],
     fill='tozeroy',
-    name="Grid Carbon Intensity",
+    name="Carbon Intensity",
     line=dict(width=3)
     ))
 
@@ -246,12 +238,6 @@ with col_bottom_left:
     line=dict(width=3)
     ))
 
-    fig_area.update_layout(
-    xaxis_title="Hour of Day",
-    yaxis_title="Intensity / Queries",
-    template="plotly_white"
-    )
-
     st.plotly_chart(fig_area,use_container_width=True)
 
 # ----------------------------------------------------
@@ -262,7 +248,6 @@ with col_bottom_right:
     st.subheader("Strategy Simulator")
 
     original_emissions=queries*gpt4
-
     new_emissions=(gpt4_queries*gpt4+gemini_flash_queries*gemini_flash)
 
     savings=original_emissions-new_emissions
