@@ -11,12 +11,13 @@ from openai import OpenAI
 # AUTO REFRESH
 # ----------------------------------------------------
 st_autorefresh(interval=5000, key="dashboardrefresh")
-# ----------------------------------------------------
-# OPENAI API SETUP
-# ----------------------------------------------------
-from openai import OpenAI
 
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+import google.generativeai as genai
+import streamlit as st
+
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 # ----------------------------------------------------
 # PAGE CONFIG
@@ -345,23 +346,9 @@ question = st.text_input("Ask a question about AI sustainability")
 
 if st.button("Generate Insight"):
 
-    if question.strip() == "":
-        st.warning("Please enter a question before generating insight.")
-    
-    else:
-        try:
-            with st.spinner("Analyzing sustainability data..."):
+    prompt = f"""
+You are an expert AI sustainability analyst helping companies reduce AI carbon emissions.
 
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are an expert AI sustainability analyst helping companies reduce AI carbon emissions."
-                        },
-                        {
-                            "role": "user",
-                            "content": f"""
 Here is the company AI dashboard data:
 
 {dashboard_data}
@@ -369,17 +356,14 @@ Here is the company AI dashboard data:
 User Question:
 {question}
 
-Provide clear sustainability recommendations.
+Provide a clear sustainability recommendation.
 """
-                        }
-                    ]
-                )
 
-                answer = response.choices[0].message.content
+    try:
+        response = model.generate_content(prompt)
 
-                st.success("AI Insight")
-                st.write(answer)
+        st.success("AI Insight")
+        st.write(response.text)
 
-        except Exception as e:
-            st.error("Error generating AI insight. Please check your API key or internet connection.")
-            st.text(str(e))
+    except Exception as e:
+        st.error(f"Error generating insight: {e}")
