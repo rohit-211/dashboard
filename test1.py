@@ -14,7 +14,9 @@ st_autorefresh(interval=5000, key="dashboardrefresh")
 # ----------------------------------------------------
 # OPENAI API SETUP
 # ----------------------------------------------------
-client = OpenAI(api_key="YOUR_API_KEY_HERE")
+from openai import OpenAI
+
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # ----------------------------------------------------
 # PAGE CONFIG
