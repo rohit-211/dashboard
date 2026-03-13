@@ -4,4 +4,4 @@ numpy
 plotly
 requests
 streamlit-autorefresh
-google-generativeai
+google-genai
