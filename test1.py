@@ -347,7 +347,7 @@ question = st.text_input("Ask a question about AI sustainability")
 if st.button("Generate Insight"):
 
     prompt = f"""
-You are an expert AI sustainability analyst helping companies reduce AI carbon emissions.
+You are an expert AI sustainability analyst.
 
 Here is the company AI dashboard data:
 
@@ -356,11 +356,11 @@ Here is the company AI dashboard data:
 User Question:
 {question}
 
-Provide a clear sustainability recommendation.
+Provide sustainability insights and recommendations.
 """
 
     try:
-        response = model.generate_content(prompt)
+        response = gemini_model.generate_content(prompt)
 
         st.success("AI Insight")
         st.write(response.text)
